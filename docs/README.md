@@ -4,7 +4,7 @@ This folder holds the design documents for Sprinter.
 
 ## Mockups
 
-Figma: (link to be added)
+Figma:(https://www.figma.com/design/A3pIF15RCN2W2bJxSnGlDI)
 
 ## Contents
 
