@@ -5,13 +5,37 @@ node_modules/
 .expo/
 dist/
 web-build/
+expo-env.d.ts
+
+# Generated native folders
+/ios
+/android
+
+# Native build files and signing keys
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Metro
+.metro-health-check*
 
 # Environment variables (keep keys out of git)
 .env
 .env*.local
 
+# TypeScript
+*.tsbuildinfo
+
 # Logs
 *.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
 
 # OS files
 .DS_Store
