@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Environment variables (keep keys out of git)
+.env
+.env*.local
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
