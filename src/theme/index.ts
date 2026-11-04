@@ -2,8 +2,8 @@
 // fonts from here, so changing the look only means changing this file.
 
 export const colors = {
-  paper: "#ECE3D2",
-  panel: "#F4EFE3",
+  paper: "#F5E1D7",
+  panel: "#F7F0E4",
   ink: "#231C15",
   accent: "#E23A1C",
   slate: "#3C4A5B",
@@ -22,7 +22,7 @@ export const fonts = {
 
 export const fontSizes = {
   label: 11,
-  tab: 12,
+  tab: 10,
   body: 16,
   wordmark: 26,
   heading: 34,
