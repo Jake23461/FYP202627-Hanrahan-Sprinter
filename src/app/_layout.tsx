@@ -12,6 +12,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
+import { colors } from "../theme";
+
 // Keep the splash screen up until the fonts are ready. This runs at the top
 // level so it happens before the first screen can render.
 SplashScreen.preventAutoHideAsync();
@@ -39,5 +41,12 @@ export default function RootLayout() {
     return null;
   }
 
-  return <Stack />;
+  return (
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.paper },
+        headerShown: false,
+      }}
+    />
+  );
 }
