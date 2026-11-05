@@ -13,3 +13,13 @@ My Final Year Project for CT413, built for brief FG2, "GroupXercisE: A Social Fi
 ## How to run
 
 To be added.
+
+## How to run tests
+
+```
+npm test
+npm run lint
+npx tsc --noEmit
+```
+
+These three checks also run on GitHub Actions for every pull request and after every merge to `main`. Tests sit in a `__tests__` folder beside the code they check.
