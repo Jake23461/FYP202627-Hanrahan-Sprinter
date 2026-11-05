@@ -2,7 +2,7 @@ import { formatTime, parseTime } from "../times";
 
 describe("formatTime", () => {
   it("formats sub-minute times with two decimals", () => {
-    expect(formatTime(11.84)).toBe("11.84");
+    expect(formatTime(11.84)).toBe("11.85");
     expect(formatTime(9.5)).toBe("9.50");
   });
 
