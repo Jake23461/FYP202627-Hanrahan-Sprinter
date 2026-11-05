@@ -99,7 +99,7 @@ A single timed run in a session.
 | --- | --- | --- | --- |
 | id | uuid | PK | |
 | session_id | uuid | not null, references `sessions(id)`, delete cascade | Delete a session and its reps go with it |
-| user_id | uuid | not null, references `profiles(id)` | Copied from the session so RLS and filtering by user can skip the join |
+| user_id | uuid | not null, references `profiles(id)`, delete cascade | Copied from the session so RLS and filtering by user can skip the join |
 | position | smallint | not null, 1 upwards | Where the rep falls in the session |
 | distance_m | smallint | 10 to 600 | Keeps it to sprint distances |
 | time_s | numeric(6,2) | greater than 0 | Stored to the hundredth of a second |
@@ -124,6 +124,8 @@ This gives the fastest max effort rep for each user, distance and timing method,
 | rep_id, session_date | The rep that set it, so the app can link back to the session |
 
 ## Who can see what (RLS)
+
+Tables need a `grant` as well as policies. A grant says which tables a role can use at all, and RLS then says which rows. The project's default privileges can give `anon` and `authenticated` full access to new tables, so the migration revokes those first. It then grants `authenticated` only what the table below needs and leaves `anon` with nothing, so you have to be signed in to read anything.
 
 In Iteration 3 you can only see your own data. Squad access doesn't arrive until Iteration 6, but I've put it in the table below so the plan is clear. Coaches can view their athletes' sessions and reps but can't edit them, so an athlete's times always stay their own (decided 4 Nov).
 
