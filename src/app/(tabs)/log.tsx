@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "../../components/Button";
@@ -6,11 +6,14 @@ import { Chip } from "../../components/Chip";
 import { Label } from "../../components/Label";
 import { PaperBackground } from "../../components/PaperBackground";
 import { TextField, type TextFieldInput } from "../../components/TextField";
+import { useAuth } from "../../context/AuthProvider";
+import { clearLogDraft, loadLogDraft, saveLogDraft } from "../../data/drafts";
 import { toNewRep } from "../../data/mappers";
 import { saveSession } from "../../data/sessions";
 import type { NewRep, SessionFocus, StartType, Surface, TimingMethod } from "../../data/types";
 import { isoToDisplay, parseDisplayDate, todayIso, validateSessionDate } from "../../lib/dates";
 import { errorMessage } from "../../lib/errors";
+import { makeLogDraft, type LogDraft } from "../../lib/logDraft";
 import {
   DISTANCE_PICKS,
   FOCUS_OPTIONS,
@@ -79,6 +82,69 @@ export default function LogScreen() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // An unsaved session left on the phone, for example after swiping the app closed.
+  const { profile } = useAuth();
+  const userId = profile?.id ?? null;
+  const [draftChecked, setDraftChecked] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<LogDraft | null>(null);
+
+  useEffect(() => {
+    if (userId === null) {
+      return;
+    }
+    let current = true;
+    loadLogDraft(userId)
+      .then((draft) => {
+        if (current) {
+          setPendingDraft(draft);
+          setDraftChecked(true);
+        }
+      })
+      .catch(() => {
+        if (current) {
+          setDraftChecked(true);
+        }
+      });
+    return () => {
+      current = false;
+    };
+  }, [userId]);
+
+  // Keep the draft up to date as the form changes. It waits until any old draft
+  // has been checked and dealt with, so it can't overwrite one before it's offered.
+  useEffect(() => {
+    if (userId === null || !draftChecked || pendingDraft !== null) {
+      return;
+    }
+    const write =
+      reps.length === 0
+        ? clearLogDraft(userId)
+        : saveLogDraft(userId, makeLogDraft({ date, focus, surface, rpe, notes, reps }));
+    // A draft that fails to save is only a lost convenience, so it isn't shown as an error.
+    write.catch(() => {});
+  }, [userId, draftChecked, pendingDraft, date, focus, surface, rpe, notes, reps]);
+
+  function handleResume() {
+    if (pendingDraft === null) {
+      return;
+    }
+    setDate(pendingDraft.date);
+    setFocus(pendingDraft.focus);
+    setSurface(pendingDraft.surface);
+    setRpe(pendingDraft.rpe);
+    setNotes(pendingDraft.notes);
+    setReps(pendingDraft.reps);
+    setPendingDraft(null);
+    setMessage(null);
+  }
+
+  function handleDiscard() {
+    if (userId !== null) {
+      clearLogDraft(userId).catch(() => {});
+    }
+    setPendingDraft(null);
+  }
 
   function handleAddRep() {
     const result = toNewRep({ distanceText, timeText, timingMethod, startType, maxEffort, note: repNote });
@@ -159,6 +225,22 @@ export default function LogScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
       >
+        {pendingDraft ? (
+          <View style={styles.draftBanner}>
+            <Label style={styles.draftText}>
+              {`Unsaved session · ${pendingDraft.reps.length} ${pendingDraft.reps.length === 1 ? "rep" : "reps"} · ${pendingDraft.date}`}
+            </Label>
+            <View style={styles.row}>
+              <View style={styles.half}>
+                <Button label="RESUME" variant="primary" onPress={handleResume} />
+              </View>
+              <View style={styles.half}>
+                <Button label="DISCARD" variant="outline" onPress={handleDiscard} />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text accessibilityRole="header" style={styles.cardTitle}>
@@ -347,7 +429,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
+    gap: spacing.md,
     padding: spacing.md,
+  },
+  draftBanner: {
+    backgroundColor: colors.panel,
+    borderColor: colors.accent,
+    borderWidth: borders.width,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  draftText: {
+    color: colors.ink,
   },
   card: {
     backgroundColor: colors.panel,
