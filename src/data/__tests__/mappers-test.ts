@@ -5,6 +5,7 @@ import {
   toRep,
   toRepInserts,
   toSession,
+  toNewRep,
   toSessionInsert,
   validateRep,
 } from "../mappers";
@@ -161,6 +162,55 @@ describe("app types to rows", () => {
       max_effort: true,
       note: null,
     });
+  });
+});
+
+describe("toNewRep", () => {
+  const draft = {
+    distanceText: "60",
+    timeText: "7.21",
+    timingMethod: "electronic" as const,
+    startType: "blocks" as const,
+    maxEffort: true,
+    note: "",
+  };
+
+  test("turns a typed rep into a NewRep", () => {
+    expect(toNewRep(draft)).toEqual({
+      rep: {
+        distanceM: 60,
+        timeS: 7.21,
+        timingMethod: "electronic",
+        startType: "blocks",
+        maxEffort: true,
+        note: null,
+      },
+      error: null,
+    });
+  });
+
+  test("reads minutes and seconds", () => {
+    expect(toNewRep({ ...draft, distanceText: "400", timeText: "1:02.31" }).rep?.timeS).toBe(62.31);
+  });
+
+  test("rounds a third decimal up, as parseTime does", () => {
+    expect(toNewRep({ ...draft, timeText: "10.843" }).rep?.timeS).toBe(10.85);
+  });
+
+  test("keeps a trimmed note", () => {
+    expect(toNewRep({ ...draft, note: "  felt slow  " }).rep?.note).toBe("felt slow");
+  });
+
+  test.each(["", "abc", "60m", "6.5", "-60"])("rejects distance %j", (distanceText) => {
+    expect(toNewRep({ ...draft, distanceText }).error).toMatch(/distance in metres/);
+  });
+
+  test.each(["5", "700"])("rejects a distance of %s with the database's range", (distanceText) => {
+    expect(toNewRep({ ...draft, distanceText }).error).toMatch(/10 to 600/);
+  });
+
+  test.each(["", "abc", "0", "1:75.00"])("rejects time %j", (timeText) => {
+    expect(toNewRep({ ...draft, timeText }).error).toMatch(/Enter a time/);
   });
 });
 

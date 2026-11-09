@@ -1,6 +1,7 @@
 // Turns database rows into app types and back, and checks reps before saving.
 // No Supabase import here, so all of it can be unit tested without a connection.
 
+import { parseTime } from "../lib/times";
 import type {
   Database,
   NewRep,
@@ -105,6 +106,43 @@ export function toRepInserts(reps: NewRep[], sessionId: string, userId: string):
     max_effort: rep.maxEffort,
     note: rep.note,
   }));
+}
+
+// What the add rep box holds before it becomes a rep.
+export type RepDraft = {
+  distanceText: string;
+  timeText: string;
+  timingMethod: NewRep["timingMethod"];
+  startType: NewRep["startType"];
+  maxEffort: boolean;
+  note: string;
+};
+
+export type RepDraftResult = { rep: NewRep; error: null } | { rep: null; error: string };
+
+// Turns what was typed into a rep, or says what's wrong with it.
+export function toNewRep(draft: RepDraft): RepDraftResult {
+  const distanceText = draft.distanceText.trim();
+  if (!/^\d+$/.test(distanceText)) {
+    return { rep: null, error: "Enter a distance in metres." };
+  }
+
+  const timeS = parseTime(draft.timeText);
+  if (timeS === null || timeS <= 0) {
+    return { rep: null, error: "Enter a time like 11.84 or 1:02.31." };
+  }
+
+  const rep: NewRep = {
+    distanceM: Number(distanceText),
+    timeS,
+    timingMethod: draft.timingMethod,
+    startType: draft.startType,
+    maxEffort: draft.maxEffort,
+    note: draft.note.trim() === "" ? null : draft.note.trim(),
+  };
+
+  const problem = validateRep(rep);
+  return problem ? { rep: null, error: problem } : { rep, error: null };
 }
 
 // Returns what's wrong with a rep, or null if it can be saved.
