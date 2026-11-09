@@ -36,7 +36,8 @@ flowchart LR
 | Layer | Folder | What it does | Rule |
 | --- | --- | --- | --- |
 | Screens | `src/app/` | One file per screen, and the folder layout sets the navigation (Expo Router) | Screens never call Supabase directly, they go through `src/data` |
-| Components and theme | `src/components/`, `src/theme/` | Panel, Label, Wordmark, TopBar and PaperBackground so far (more as screens need them); tokens for colours, fonts and spacing | No hard coded colours or fonts outside `theme` |
+| Components and theme | `src/components/`, `src/theme/` | Panel, Label, Wordmark, TopBar, PaperBackground, Button, TextField, Chip and FormScreen so far (more as screens need them); tokens for colours, fonts and spacing | No hard coded colours or fonts outside `theme` |
+| App state | `src/context/` | `AuthProvider` holds who's signed in and their profile for every screen | Goes through `src/data`, never calls Supabase directly |
 | Logic | `src/lib/` | Plain TypeScript for formatting and parsing times, PBs, streaks and predictors | No React or Supabase in here, so it can all be unit tested on its own |
 | Data access | `src/data/` | Functions like `getSessions()` and `saveSession()` that wrap the Supabase queries and return typed objects | The only place that knows table and column names |
 | Database | `supabase/migrations/` | Tables, views and RLS policies | Every change gets a new migration file |
@@ -45,7 +46,9 @@ I've kept logic and data access out of the screens for two reasons. Most of the 
 
 ## Key flows
 
-**Sign up.** The app calls `supabase.auth.signUp` with the email, password and display name. Supabase Auth creates the user and a database trigger creates their `profiles` row. The session token is saved on the phone with AsyncStorage so they stay logged in.
+**Sign up.** The app calls `supabase.auth.signUp` with the email, password and display name. Supabase Auth creates the user and a database trigger creates their `profiles` row. The session token is saved on the phone with AsyncStorage so they stay logged in. The events step then saves their username, events and age group to that row. It comes after the account exists because signed out users can't read `profiles`, so a taken username can only be caught at that point.
+
+**Which screens someone can reach.** `AuthProvider` listens with `onAuthStateChange`, loads the profile and works out a status: signed out, needs the events step, or ready. `Stack.Protected` in the root and `(auth)` layouts only includes the screens for that status, and Expo Router moves people on when it changes. This only decides what the app shows. RLS is still what protects the data.
 
 **Log a session (use case 1).** The Log screen holds the session and its reps in memory until the user saves. `src/data/sessions.ts` then inserts the session, followed by the reps, and RLS checks that the user id on every row belongs to the signed in user. After that the app reloads `personal_bests` and highlights any distance where the new rep is now the best.
 
