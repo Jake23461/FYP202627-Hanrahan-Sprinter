@@ -7,18 +7,43 @@ import type {
   NewSession,
   PersonalBest,
   PersonalBestRow,
+  Profile,
+  ProfileChanges,
+  ProfileRow,
   Rep,
   RepRow,
   Session,
   SessionRow,
 } from "./types";
 
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 type SessionInsert = Database["public"]["Tables"]["sessions"]["Insert"];
 type RepInsert = Database["public"]["Tables"]["reps"]["Insert"];
 
 const MIN_DISTANCE_M = 10;
 const MAX_DISTANCE_M = 600;
 const MAX_TIME_S = 9999.99; // The largest value numeric(6,2) can hold.
+
+export function toProfile(row: ProfileRow): Profile {
+  return {
+    id: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    events: row.events,
+    ageGroup: row.age_group,
+    club: row.club,
+  };
+}
+
+// Only includes what's being changed, so the other columns are left alone.
+export function toProfileUpdate(changes: ProfileChanges): ProfileUpdate {
+  return {
+    ...(changes.username === undefined ? {} : { username: changes.username }),
+    ...(changes.displayName === undefined ? {} : { display_name: changes.displayName }),
+    ...(changes.events === undefined ? {} : { events: changes.events }),
+    ...(changes.ageGroup === undefined ? {} : { age_group: changes.ageGroup }),
+  };
+}
 
 export function toSession(row: SessionRow): Session {
   return {

@@ -12,11 +12,53 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 
+import { PaperBackground } from "../components/PaperBackground";
+import { ProfileErrorScreen } from "../components/ProfileErrorScreen";
+import { AuthProvider, useAuth } from "../context/AuthProvider";
 import { colors } from "../theme";
 
-// Keep the splash screen up until the fonts are ready. This runs at the top
-// level so it happens before the first screen can render.
+// Keep the splash screen up until the fonts and login are ready. This runs at
+// the top level so it happens before the first screen can render.
 SplashScreen.preventAutoHideAsync();
+
+// Stack.Protected removes the screens whose guard is false, so signed out users
+// can't reach the tabs and the router moves people on when the status changes.
+function RootNavigator() {
+  const { status } = useAuth();
+  const ready = status !== "loading";
+
+  useEffect(() => {
+    if (ready) {
+      SplashScreen.hide();
+    }
+  }, [ready]);
+
+  if (status === "loading") {
+    return <PaperBackground style={{ flex: 1 }} />;
+  }
+  if (status === "profileError") {
+    return <ProfileErrorScreen />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        contentStyle: { backgroundColor: colors.paper },
+        headerShown: false,
+      }}
+    >
+      <Stack.Protected
+        guard={status === "ready"}
+        redirectTo={status === "needsProfile" ? "/events" : "/welcome"}
+      >
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+      <Stack.Protected guard={status !== "ready"} redirectTo="/">
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -29,24 +71,13 @@ export default function RootLayout() {
 
   // If a font fails to load, carry on with the system font rather than
   // leaving the app stuck on the splash screen.
-  const ready = fontsLoaded || fontError !== null;
-
-  useEffect(() => {
-    if (ready) {
-      SplashScreen.hide();
-    }
-  }, [ready]);
-
-  if (!ready) {
+  if (!fontsLoaded && fontError === null) {
     return null;
   }
 
   return (
-    <Stack
-      screenOptions={{
-        contentStyle: { backgroundColor: colors.paper },
-        headerShown: false,
-      }}
-    />
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }

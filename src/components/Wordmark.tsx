@@ -5,9 +5,15 @@ import { colors, fonts, fontSizes, letterSpacing } from "../theme";
 const NAME = "SPRINTER";
 const SHADOW_OFFSET = 2;
 
+type WordmarkProps = {
+  size?: number;
+};
+
 // Two copies of the name, slightly offset, like a misaligned print run.
 // The back copy is hidden from screen readers so the name is only read once.
-export function Wordmark() {
+export function Wordmark({ size = fontSizes.wordmark }: WordmarkProps) {
+  const text = [styles.text, { fontSize: size }];
+
   return (
     <View
       accessible
@@ -18,11 +24,11 @@ export function Wordmark() {
       <Text
         accessibilityElementsHidden
         importantForAccessibility="no"
-        style={[styles.text, styles.shadow]}
+        style={[text, styles.shadow]}
       >
         {NAME}
       </Text>
-      <Text style={[styles.text, styles.front]}>{NAME}</Text>
+      <Text style={[text, styles.front]}>{NAME}</Text>
     </View>
   );
 }
@@ -35,7 +41,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: fonts.display,
-    fontSize: fontSizes.wordmark,
     letterSpacing: letterSpacing.tight,
   },
   shadow: {

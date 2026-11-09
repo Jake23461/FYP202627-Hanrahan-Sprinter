@@ -23,9 +23,11 @@ export const fonts = {
 export const fontSizes = {
   label: 11,
   tab: 10,
+  button: 14,
   body: 16,
   wordmark: 26,
   heading: 34,
+  hero: 58,
 } as const;
 
 // letterSpacing is in pixels in React Native, not em.
