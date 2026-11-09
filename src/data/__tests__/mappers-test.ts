@@ -1,12 +1,14 @@
 import {
   toPersonalBest,
+  toProfile,
+  toProfileUpdate,
   toRep,
   toRepInserts,
   toSession,
   toSessionInsert,
   validateRep,
 } from "../mappers";
-import type { NewRep, NewSession, PersonalBestRow, RepRow, SessionRow } from "../types";
+import type { NewRep, NewSession, PersonalBestRow, ProfileRow, RepRow, SessionRow } from "../types";
 
 const newRep: NewRep = {
   distanceM: 100,
@@ -16,6 +18,39 @@ const newRep: NewRep = {
   maxEffort: true,
   note: null,
 };
+
+describe("profiles", () => {
+  test("toProfile maps the columns and leaves out the timestamp", () => {
+    const row: ProfileRow = {
+      id: "u1",
+      username: "jake_23",
+      display_name: "Jake",
+      events: ["60m", "100m"],
+      age_group: "Senior",
+      club: null,
+      created_at: "2026-11-05T10:00:00Z",
+    };
+
+    expect(toProfile(row)).toEqual({
+      id: "u1",
+      username: "jake_23",
+      displayName: "Jake",
+      events: ["60m", "100m"],
+      ageGroup: "Senior",
+      club: null,
+    });
+  });
+
+  test("toProfileUpdate maps the fields being changed", () => {
+    expect(
+      toProfileUpdate({ username: "jake_23", displayName: "Jake", events: ["60m"], ageGroup: "U20" }),
+    ).toEqual({ username: "jake_23", display_name: "Jake", events: ["60m"], age_group: "U20" });
+  });
+
+  test("toProfileUpdate leaves out fields that aren't being changed", () => {
+    expect(toProfileUpdate({ events: ["200m"] })).toEqual({ events: ["200m"] });
+  });
+});
 
 describe("rows to app types", () => {
   test("toSession maps the columns and leaves out the owner and timestamps", () => {

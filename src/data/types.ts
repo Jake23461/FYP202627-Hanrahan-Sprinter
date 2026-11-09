@@ -94,6 +94,20 @@ export type Database = {
   };
 };
 
+export type Profile = {
+  id: string;
+  username: string | null;
+  displayName: string;
+  events: string[];
+  ageGroup: AgeGroup | null;
+  club: string | null;
+};
+
+// What the app can change on a profile. The events step sets the first three.
+export type ProfileChanges = Partial<
+  Pick<Profile, "username" | "displayName" | "events" | "ageGroup">
+>;
+
 export type Session = {
   id: string;
   sessionDate: string;
