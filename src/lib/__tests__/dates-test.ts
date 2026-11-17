@@ -1,4 +1,15 @@
-import { isoToDisplay, parseDisplayDate, todayIso, validateSessionDate } from "../dates";
+import { dateParts, isoToDisplay, parseDisplayDate, todayIso, validateSessionDate } from "../dates";
+
+describe("dateParts", () => {
+  test.each([
+    ["2026-11-09", { weekday: "MON", day: 9, month: "NOV" }],
+    ["2026-10-10", { weekday: "SAT", day: 10, month: "OCT" }],
+    ["2028-02-29", { weekday: "TUE", day: 29, month: "FEB" }],
+    ["2027-01-01", { weekday: "FRI", day: 1, month: "JAN" }],
+  ])("splits %s", (iso, expected) => {
+    expect(dateParts(iso)).toEqual(expected);
+  });
+});
 
 describe("todayIso", () => {
   test("uses the local date with leading zeros", () => {

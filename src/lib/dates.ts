@@ -34,6 +34,18 @@ export function parseDisplayDate(text: string): string | null {
   return `${year}-${pad(month)}-${pad(day)}`;
 }
 
+const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+// "2026-11-09" -> { weekday: "MON", day: 9, month: "NOV" }. Built from the parts,
+// because new Date("2026-11-09") is read as UTC midnight and can land on the
+// day before in a time zone behind UTC.
+export function dateParts(iso: string): { weekday: string; day: number; month: string } {
+  const [year, month, day] = iso.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return { weekday: WEEKDAYS[date.getDay()], day, month: MONTHS[month - 1] };
+}
+
 export function validateSessionDate(text: string, today: string = todayIso()): string | null {
   const iso = parseDisplayDate(text);
   if (iso === null) {
