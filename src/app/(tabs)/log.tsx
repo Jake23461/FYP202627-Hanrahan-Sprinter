@@ -4,16 +4,19 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "
 import { Button } from "../../components/Button";
 import { Chip } from "../../components/Chip";
 import { Label } from "../../components/Label";
+import { NewPbScreen } from "../../components/NewPbScreen";
 import { PaperBackground } from "../../components/PaperBackground";
 import { TextField, type TextFieldInput } from "../../components/TextField";
 import { useAuth } from "../../context/AuthProvider";
 import { clearLogDraft, loadLogDraft, saveLogDraft } from "../../data/drafts";
 import { toNewRep } from "../../data/mappers";
+import { getPersonalBests } from "../../data/personalBests";
 import { saveSession } from "../../data/sessions";
-import type { NewRep, SessionFocus, StartType, Surface, TimingMethod } from "../../data/types";
+import type { NewRep, Rep, SessionFocus, StartType, Surface, TimingMethod } from "../../data/types";
 import { isoToDisplay, parseDisplayDate, todayIso, validateSessionDate } from "../../lib/dates";
 import { errorMessage } from "../../lib/errors";
 import { makeLogDraft, type LogDraft } from "../../lib/logDraft";
+import { findNewPbs, type NewPb } from "../../lib/pbs";
 import {
   DISTANCE_PICKS,
   FOCUS_OPTIONS,
@@ -33,7 +36,11 @@ function labelFor<T extends string>(options: { value: T; label: string }[], valu
 }
 
 function RepRow({ number, rep, onRemove }: { number: number; rep: NewRep; onRemove: () => void }) {
-  const details = [labelFor(START_OPTIONS, rep.startType), rep.maxEffort ? null : "Training"]
+  const details = [
+    labelFor(START_OPTIONS, rep.startType),
+    labelFor(TIMING_OPTIONS, rep.timingMethod),
+    rep.maxEffort ? null : "Training",
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -42,7 +49,7 @@ function RepRow({ number, rep, onRemove }: { number: number; rep: NewRep; onRemo
       <Text style={styles.repNumber}>{number}</Text>
       <View style={styles.repMain}>
         <Text style={styles.repText}>
-          {rep.distanceM}m  {formatRepTime(rep.timeS, rep.timingMethod)}
+          {rep.distanceM}m  {formatRepTime(rep.timeS)}
         </Text>
         <Label>{details}</Label>
         {rep.note ? <Text style={styles.repNote}>{rep.note}</Text> : null}
@@ -82,6 +89,7 @@ export default function LogScreen() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [pbResult, setPbResult] = useState<{ pbs: NewPb[]; reps: Rep[]; sessionDate: string } | null>(null);
 
   // An unsaved session left on the phone, for example after swiping the app closed.
   const { profile } = useAuth();
@@ -198,7 +206,10 @@ export default function LogScreen() {
 
     setSaving(true);
     try {
-      await saveSession(
+      // PBs come from the personal_bests view, so compare it before and after
+      // the save. If either read fails, the session still saves without the PB screen.
+      const before = await getPersonalBests().catch(() => null);
+      const saved = await saveSession(
         {
           sessionDate: parseDisplayDate(date) ?? undefined,
           focus,
@@ -208,14 +219,25 @@ export default function LogScreen() {
         },
         reps,
       );
+      const after = await getPersonalBests().catch(() => null);
+      const newPbs = before && after ? findNewPbs(before, after) : [];
+
       const count = reps.length;
       clearSession();
-      setMessage(`Session saved: ${count} ${count === 1 ? "rep" : "reps"}.`);
+      if (newPbs.length > 0) {
+        setPbResult({ pbs: newPbs, reps: saved.reps, sessionDate: saved.sessionDate });
+      } else {
+        setMessage(`Session saved: ${count} ${count === 1 ? "rep" : "reps"}.`);
+      }
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setSaving(false);
     }
+  }
+
+  if (pbResult) {
+    return <NewPbScreen {...pbResult} onDone={() => setPbResult(null)} />;
   }
 
   return (

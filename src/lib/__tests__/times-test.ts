@@ -1,17 +1,21 @@
 import { formatRepTime, formatTime, parseTime } from "../times";
 
 describe("formatRepTime", () => {
-  it("marks hand times with an h", () => {
-    expect(formatRepTime(11.84, "hand")).toBe("11.84h");
-    expect(formatRepTime(62.31, "hand")).toBe("1:02.31h");
+  it("adds seconds to times under a minute", () => {
+    expect(formatRepTime(11.84)).toBe("11.84s");
+    expect(formatRepTime(4)).toBe("4.00s");
   });
 
-  it("leaves electronic times unmarked", () => {
-    expect(formatRepTime(11.84, "electronic")).toBe("11.84");
+  it("leaves times over a minute as minutes and seconds", () => {
+    expect(formatRepTime(62.31)).toBe("1:02.31");
+  });
+
+  it("doesn't add seconds when rounding up reaches a minute", () => {
+    expect(formatRepTime(59.999)).toBe("1:00.00");
   });
 
   it("returns nothing for a time that can't be shown", () => {
-    expect(formatRepTime(NaN, "hand")).toBe("");
+    expect(formatRepTime(NaN)).toBe("");
   });
 });
 

@@ -1,7 +1,5 @@
 // Formatting and parsing for sprint times. Times are held in seconds.
 
-import type { TimingMethod } from "../data/types";
-
 // Times are recorded to the hundredth, and anything between two hundredths goes
 // up to the next one (10.843 becomes 10.85), following World Athletics Technical
 // Rule 19.23 for automatic timing. toFixed removes float noise first, otherwise
@@ -27,11 +25,12 @@ export function formatTime(seconds: number): string {
   return `${minutes}:${remainder.padStart(5, "0")}`;
 }
 
-// Hand times get an "h" so they're never mistaken for electronic ones:
-// 11.84 hand -> "11.84h", 11.84 electronic -> "11.84".
-export function formatRepTime(seconds: number, timingMethod: TimingMethod): string {
+// A time with its unit: 11.84 -> "11.84s". Over a minute it stays "1:02.31",
+// because the colon already shows it's a time. Whether it was hand or
+// electronic is shown in a label next to it, not in the time.
+export function formatRepTime(seconds: number): string {
   const time = formatTime(seconds);
-  return timingMethod === "hand" && time !== "" ? `${time}h` : time;
+  return time !== "" && seconds < 60 && !time.includes(":") ? `${time}s` : time;
 }
 
 // "11.84" -> 11.84, "1:02.31" -> 62.31. Returns null if the text isn't a time.

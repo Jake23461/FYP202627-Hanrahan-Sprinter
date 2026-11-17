@@ -1,5 +1,24 @@
 import type { PersonalBest } from "../../data/types";
-import { findNewPbs } from "../pbs";
+import { describeImprovement, findNewPbs, type NewPb } from "../pbs";
+
+describe("describeImprovement", () => {
+  const newPb: NewPb = { distanceM: 60, timingMethod: "electronic", timeS: 7.21, repId: "r1", previousS: 7.34 };
+
+  test("says how much faster, without float noise", () => {
+    // 7.34 - 7.21 is 0.1299999... in floating point.
+    expect(describeImprovement(newPb)).toBe("0.13s faster than 7.34s");
+  });
+
+  test("works the same for a hand time", () => {
+    expect(describeImprovement({ ...newPb, timingMethod: "hand", timeS: 11.5, previousS: 11.84 })).toBe(
+      "0.34s faster than 11.84s",
+    );
+  });
+
+  test("names a first PB", () => {
+    expect(describeImprovement({ ...newPb, previousS: null })).toBe("First electronic 60m PB");
+  });
+});
 
 function pb(
   distanceM: number,
