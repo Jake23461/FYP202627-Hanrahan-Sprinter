@@ -1,4 +1,5 @@
 import {
+  attachReps,
   toPersonalBest,
   toProfile,
   toProfileUpdate,
@@ -162,6 +163,38 @@ describe("app types to rows", () => {
       max_effort: true,
       note: null,
     });
+  });
+});
+
+describe("attachReps", () => {
+  const base = { sessionDate: "2026-11-09", focus: null, surface: null, rpe: null, notes: null };
+  const repFor = (id: string, sessionId: string, position: number) => ({
+    id,
+    sessionId,
+    position,
+    distanceM: 60,
+    timeS: 7.2,
+    timingMethod: "hand" as const,
+    startType: "blocks" as const,
+    maxEffort: true,
+    note: null,
+  });
+
+  test("puts each rep with its own session, keeping their order", () => {
+    const sessions = [
+      { id: "s2", ...base },
+      { id: "s1", ...base },
+    ];
+    const reps = [repFor("a", "s1", 1), repFor("b", "s2", 1), repFor("c", "s1", 2)];
+
+    expect(attachReps(sessions, reps).map((session) => session.reps.map((item) => item.id))).toEqual([
+      ["b"],
+      ["a", "c"],
+    ]);
+  });
+
+  test("gives a session with no reps an empty list", () => {
+    expect(attachReps([{ id: "s1", ...base }], [])[0].reps).toEqual([]);
   });
 });
 

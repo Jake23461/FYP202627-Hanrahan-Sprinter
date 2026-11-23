@@ -3,7 +3,7 @@
 
 import { supabase } from "@/lib/supabase";
 
-import { toRep, toRepInserts, toSession, toSessionInsert, validateRep } from "./mappers";
+import { attachReps, toRep, toRepInserts, toSession, toSessionInsert, validateRep } from "./mappers";
 import type { NewRep, NewSession, Rep, Session, SessionWithReps } from "./types";
 
 async function getReps(sessionId: string): Promise<Rep[]> {
@@ -31,6 +31,29 @@ export async function getSessions(): Promise<Session[]> {
     throw error;
   }
   return data.map(toSession);
+}
+
+// Every session with its reps, newest first, for the history list. Two queries
+// rather than one per session, however many sessions there are.
+export async function getSessionsWithReps(): Promise<SessionWithReps[]> {
+  const sessions = await getSessions();
+  if (sessions.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("reps")
+    .select("*")
+    .in(
+      "session_id",
+      sessions.map((session) => session.id),
+    )
+    .order("position");
+
+  if (error) {
+    throw error;
+  }
+  return attachReps(sessions, data.map(toRep));
 }
 
 // Returns null if the session doesn't exist or belongs to someone else.

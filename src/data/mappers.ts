@@ -15,6 +15,7 @@ import type {
   RepRow,
   Session,
   SessionRow,
+  SessionWithReps,
 } from "./types";
 
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -79,6 +80,16 @@ export function toPersonalBest(row: PersonalBestRow): PersonalBest {
     repId: row.rep_id,
     sessionDate: row.session_date,
   };
+}
+
+// Puts each rep with its session. Reps keep the order they came in, which the
+// query sets by position.
+export function attachReps(sessions: Session[], reps: Rep[]): SessionWithReps[] {
+  const bySession = new Map<string, Rep[]>();
+  for (const rep of reps) {
+    bySession.set(rep.sessionId, [...(bySession.get(rep.sessionId) ?? []), rep]);
+  }
+  return sessions.map((session) => ({ ...session, reps: bySession.get(session.id) ?? [] }));
 }
 
 export function toSessionInsert(session: NewSession, userId: string): SessionInsert {
