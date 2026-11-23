@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button } from "../../components/Button";
 import { Chip } from "../../components/Chip";
+import { confirmAction } from "../../components/confirm";
 import { Label } from "../../components/Label";
 import { NewPbScreen } from "../../components/NewPbScreen";
 import { PaperBackground } from "../../components/PaperBackground";
+import { RepRow } from "../../components/RepRow";
 import { TextField, type TextFieldInput } from "../../components/TextField";
 import { useAuth } from "../../context/AuthProvider";
 import { clearLogDraft, loadLogDraft, saveLogDraft } from "../../data/drafts";
@@ -24,47 +26,11 @@ import {
   SURFACE_OPTIONS,
   TIMING_OPTIONS,
 } from "../../lib/sessionOptions";
-import { formatRepTime } from "../../lib/times";
 import { validateRpe } from "../../lib/validation";
 import { borders, colors, fonts, fontSizes, letterSpacing, spacing } from "../../theme";
 
 // The number pad has no ":" on iOS, so minutes and seconds like 1:02.31 couldn't be typed.
 const TIME_KEYBOARD = Platform.OS === "ios" ? "numbers-and-punctuation" : "default";
-
-function labelFor<T extends string>(options: { value: T; label: string }[], value: T | null): string {
-  return options.find((option) => option.value === value)?.label ?? "";
-}
-
-function RepRow({ number, rep, onRemove }: { number: number; rep: NewRep; onRemove: () => void }) {
-  const details = [
-    labelFor(START_OPTIONS, rep.startType),
-    labelFor(TIMING_OPTIONS, rep.timingMethod),
-    rep.maxEffort ? null : "Training",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  return (
-    <View style={styles.repRow}>
-      <Text style={styles.repNumber}>{number}</Text>
-      <View style={styles.repMain}>
-        <Text style={styles.repText}>
-          {rep.distanceM}m  {formatRepTime(rep.timeS)}
-        </Text>
-        <Label>{details}</Label>
-        {rep.note ? <Text style={styles.repNote}>{rep.note}</Text> : null}
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Remove rep ${number}`}
-        hitSlop={spacing.sm}
-        onPress={onRemove}
-      >
-        <Text style={styles.remove}>×</Text>
-      </Pressable>
-    </View>
-  );
-}
 
 export default function LogScreen() {
   // The session.
@@ -182,15 +148,17 @@ export default function LogScreen() {
     setError(null);
   }
 
-  function handleCancel() {
-    if (reps.length === 0) {
+  async function handleCancel() {
+    const confirmed =
+      reps.length === 0 ||
+      (await confirmAction({
+        title: "Clear this session?",
+        message: "The reps you've added will be lost.",
+        confirmLabel: "Clear",
+      }));
+    if (confirmed) {
       clearSession();
-      return;
     }
-    Alert.alert("Clear this session?", "The reps you've added will be lost.", [
-      { text: "Keep", style: "cancel" },
-      { text: "Clear", style: "destructive", onPress: clearSession },
-    ]);
   }
 
   async function handleSave() {
@@ -509,39 +477,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: fontSizes.body * 1.5,
     letterSpacing: letterSpacing.tight,
-  },
-  repRow: {
-    alignItems: "center",
-    borderBottomColor: colors.ink,
-    borderBottomWidth: borders.width / 2,
-    flexDirection: "row",
-    gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  repNumber: {
-    color: colors.ink,
-    fontFamily: fonts.display,
-    fontSize: fontSizes.body * 1.25,
-    width: spacing.lg,
-  },
-  repMain: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  repText: {
-    color: colors.ink,
-    fontFamily: fonts.monoBold,
-    fontSize: fontSizes.body,
-  },
-  repNote: {
-    color: colors.ink,
-    fontFamily: fonts.body,
-    fontSize: fontSizes.label + 2,
-  },
-  remove: {
-    color: colors.ink,
-    fontFamily: fonts.monoBold,
-    fontSize: fontSizes.heading * 0.6,
   },
   addRep: {
     borderColor: colors.ink,

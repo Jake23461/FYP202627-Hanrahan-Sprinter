@@ -36,7 +36,7 @@ flowchart LR
 | Layer | Folder | What it does | Rule |
 | --- | --- | --- | --- |
 | Screens | `src/app/` | One file per screen, and the folder layout sets the navigation (Expo Router) | Screens never call Supabase directly, they go through `src/data` |
-| Components and theme | `src/components/`, `src/theme/` | Panel, Label, Wordmark, TopBar, PaperBackground, Button, TextField, Chip and FormScreen so far (more as screens need them); tokens for colours, fonts and spacing | No hard coded colours or fonts outside `theme` |
+| Components and theme | `src/components/`, `src/theme/` | Panel, Label, Wordmark, TopBar, PaperBackground, Button, TextField, Chip, FormScreen, RepRow and NewPbScreen so far (more as screens need them); tokens for colours, fonts and spacing | No hard coded colours or fonts outside `theme` |
 | App state | `src/context/` | `AuthProvider` holds who's signed in and their profile for every screen | Goes through `src/data`, never calls Supabase directly |
 | Logic | `src/lib/` | Plain TypeScript for formatting and parsing times, PBs, streaks and predictors | No React or Supabase in here, so it can all be unit tested on its own |
 | Data access | `src/data/` | Functions like `getSessions()` and `saveSession()` that wrap the Supabase queries and return typed objects | The only place that knows table and column names |
@@ -50,7 +50,9 @@ I've kept logic and data access out of the screens for two reasons. Most of the 
 
 **Which screens someone can reach.** `AuthProvider` listens with `onAuthStateChange`, loads the profile and works out a status: signed out, needs the events step, or ready. `Stack.Protected` in the root and `(auth)` layouts only includes the screens for that status, and Expo Router moves people on when it changes. This only decides what the app shows. RLS is still what protects the data.
 
-**Log a session (use case 1).** The Log screen holds the session and its reps in memory until the user saves. `src/data/sessions.ts` then inserts the session, followed by the reps, and RLS checks that the user id on every row belongs to the signed in user. After that the app reloads `personal_bests` and highlights any distance where the new rep is now the best.
+**Log a session (use case 1).** The Log screen holds the session and its reps in memory until the user saves. It also keeps a copy as a draft on the phone (AsyncStorage, one per account), so swiping the app closed between reps doesn't lose them; the draft is offered back with Resume or Discard and is never sent to the database. On save, the app reads `personal_bests`, then `src/data/sessions.ts` inserts the session followed by the reps, and RLS checks that the user id on every row belongs to the signed in user. If the reps insert fails, the session is deleted again, because the two inserts aren't one transaction. The app then reads `personal_bests` again, and `findNewPbs` in `src/lib/pbs.ts` compares the two lists to show a NEW PB screen for each distance and timing method that improved.
+
+**Session history.** The TRAIN tab lists the user's sessions, newest first, loaded with their reps in two queries and reloaded whenever the tab comes back into view. Opening one shows its reps on `src/app/sessions/[id].tsx`, where it can be deleted; its reps go with it through `on delete cascade`.
 
 **Squad data (Iteration 6).** This works the same way, except the RLS policies on `sessions` and `reps` also let members of a shared squad read each other's rows. The app code shouldn't change much because the database does the filtering.
 

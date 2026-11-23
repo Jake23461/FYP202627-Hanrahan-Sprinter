@@ -21,7 +21,12 @@ function SessionRow({ session }: { session: SessionWithReps }) {
   const { title, summary, best } = summariseSession(session);
 
   return (
-    <View style={styles.row}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${day} ${month}, ${summary}`}
+      onPress={() => router.push({ pathname: "/sessions/[id]", params: { id: session.id } })}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+    >
       <View style={styles.date}>
         <Text style={styles.dateText}>{`${day} ${month}`}</Text>
         <Label>{weekday}</Label>
@@ -36,7 +41,7 @@ function SessionRow({ session }: { session: SessionWithReps }) {
           <Text style={styles.bestTime}>{formatRepTime(best.timeS)}</Text>
         </View>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -176,6 +181,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     paddingVertical: spacing.md,
+  },
+  rowPressed: {
+    opacity: 0.6,
   },
   date: {
     gap: spacing.xs,

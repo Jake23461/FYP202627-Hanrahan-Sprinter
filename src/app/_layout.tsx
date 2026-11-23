@@ -52,6 +52,7 @@ function RootNavigator() {
         redirectTo={status === "needsProfile" ? "/events" : "/welcome"}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="sessions/[id]" />
       </Stack.Protected>
       <Stack.Protected guard={status !== "ready"} redirectTo="/">
         <Stack.Screen name="(auth)" />
