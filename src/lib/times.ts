@@ -25,6 +25,14 @@ export function formatTime(seconds: number): string {
   return `${minutes}:${remainder.padStart(5, "0")}`;
 }
 
+// A time with its unit: 11.84 -> "11.84s". Over a minute it stays "1:02.31",
+// because the colon already shows it's a time. Whether it was hand or
+// electronic is shown in a label next to it, not in the time.
+export function formatRepTime(seconds: number): string {
+  const time = formatTime(seconds);
+  return time !== "" && seconds < 60 && !time.includes(":") ? `${time}s` : time;
+}
+
 // "11.84" -> 11.84, "1:02.31" -> 62.31. Returns null if the text isn't a time.
 export function parseTime(text: string): number | null {
   const match = /^(?:(\d+):(\d{2}(?:\.\d+)?)|(\d+(?:\.\d+)?))$/.exec(text.trim());

@@ -2,6 +2,7 @@ import {
   validateDisplayName,
   validateEmail,
   validatePassword,
+  validateRpe,
   validateUsername,
 } from "../validation";
 
@@ -35,6 +36,16 @@ describe("validatePassword", () => {
 
   test.each(["", "1234567"])("rejects %j", (password) => {
     expect(validatePassword(password)).toMatch(/at least 8/);
+  });
+});
+
+describe("validateRpe", () => {
+  test.each(["", "  ", "1", "7", "10", " 8 "])("accepts %j", (rpe) => {
+    expect(validateRpe(rpe)).toBeNull();
+  });
+
+  test.each(["0", "11", "7.5", "-1", "ten", "01"])("rejects %j", (rpe) => {
+    expect(validateRpe(rpe)).toMatch(/1 to 10/);
   });
 });
 

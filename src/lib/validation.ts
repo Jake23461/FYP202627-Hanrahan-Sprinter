@@ -19,6 +19,15 @@ export function validatePassword(password: string): string | null {
     : `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
 }
 
+// RPE is optional, so an empty field is fine. Matches the check on sessions.rpe.
+export function validateRpe(text: string): string | null {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return null;
+  }
+  return /^(10|[1-9])$/.test(trimmed) ? null : "RPE must be a whole number from 1 to 10.";
+}
+
 // The same rule as the check on profiles.username in the database.
 export function validateUsername(username: string): string | null {
   return /^[a-z0-9_]{3,20}$/.test(username)

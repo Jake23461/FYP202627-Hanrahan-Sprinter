@@ -1,10 +1,12 @@
 import {
+  attachReps,
   toPersonalBest,
   toProfile,
   toProfileUpdate,
   toRep,
   toRepInserts,
   toSession,
+  toNewRep,
   toSessionInsert,
   validateRep,
 } from "../mappers";
@@ -161,6 +163,87 @@ describe("app types to rows", () => {
       max_effort: true,
       note: null,
     });
+  });
+});
+
+describe("attachReps", () => {
+  const base = { sessionDate: "2026-11-09", focus: null, surface: null, rpe: null, notes: null };
+  const repFor = (id: string, sessionId: string, position: number) => ({
+    id,
+    sessionId,
+    position,
+    distanceM: 60,
+    timeS: 7.2,
+    timingMethod: "hand" as const,
+    startType: "blocks" as const,
+    maxEffort: true,
+    note: null,
+  });
+
+  test("puts each rep with its own session, keeping their order", () => {
+    const sessions = [
+      { id: "s2", ...base },
+      { id: "s1", ...base },
+    ];
+    const reps = [repFor("a", "s1", 1), repFor("b", "s2", 1), repFor("c", "s1", 2)];
+
+    expect(attachReps(sessions, reps).map((session) => session.reps.map((item) => item.id))).toEqual([
+      ["b"],
+      ["a", "c"],
+    ]);
+  });
+
+  test("gives a session with no reps an empty list", () => {
+    expect(attachReps([{ id: "s1", ...base }], [])[0].reps).toEqual([]);
+  });
+});
+
+describe("toNewRep", () => {
+  const draft = {
+    distanceText: "60",
+    timeText: "7.21",
+    timingMethod: "electronic" as const,
+    startType: "blocks" as const,
+    maxEffort: true,
+    note: "",
+  };
+
+  test("turns a typed rep into a NewRep", () => {
+    expect(toNewRep(draft)).toEqual({
+      rep: {
+        distanceM: 60,
+        timeS: 7.21,
+        timingMethod: "electronic",
+        startType: "blocks",
+        maxEffort: true,
+        note: null,
+      },
+      error: null,
+    });
+  });
+
+  test("reads minutes and seconds", () => {
+    expect(toNewRep({ ...draft, distanceText: "400", timeText: "1:02.31" }).rep?.timeS).toBe(62.31);
+  });
+
+  test("rounds a third decimal up, as parseTime does", () => {
+    expect(toNewRep({ ...draft, timeText: "10.843" }).rep?.timeS).toBe(10.85);
+  });
+
+  test("keeps a trimmed note", () => {
+    expect(toNewRep({ ...draft, note: "  felt slow  " }).rep?.note).toBe("felt slow");
+  });
+
+  test.each(["", "abc", "60m", "6.5", "-60"])("rejects distance %j", (distanceText) => {
+    expect(toNewRep({ ...draft, distanceText }).error).toMatch(/distance in metres/);
+  });
+
+  test.each(["5", "700"])("rejects a distance of %s with the database's range", (distanceText) => {
+    expect(toNewRep({ ...draft, distanceText }).error).toMatch(/10 to 600/);
+  });
+
+  test.each(["", "abc", "0", "1:75.00"])("rejects time %j", (timeText) => {
+    expect(toNewRep({ ...draft, timeText }).error).toMatch(/Enter a time/);
   });
 });
 
